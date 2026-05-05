@@ -14,4 +14,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDWISE_CFA10 }}
           channelId: live
           projectId: spendwise-cfa10
-          entryPoint: ./Expense\ Tracker
+          entryPoint: "Expense Tracker"
