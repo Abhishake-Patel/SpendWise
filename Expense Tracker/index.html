@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#8B5CF6" />
+  <title>SpendWise — Personal Finance</title>
+  <meta name="description" content="Track your personal income and expenses with beautiful charts and budget management." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B5CF6' stroke-width='2'><rect x='1' y='5' width='22' height='16' rx='2'/><path d='M1 10h22'/><path d='M7 15h2'/></svg>" />
+
+  <!-- Firebase v9 compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- =====================================================
+     AUTH PAGE
+     ===================================================== -->
+<div id="auth-page">
+  <div class="auth-wrap">
+
+    <div class="auth-logo">
+      <div class="logo-orb">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="16" rx="2"/><path d="M1 10h22"/><path d="M7 15h2"/></svg>
+      </div>
+      <h1>SpendWise</h1>
+      <p>Your smart finance companion</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign In</button>
+        <button class="auth-tab" data-tab="register">Create Account</button>
+      </div>
+
+      <!-- Login -->
+      <form class="auth-form" id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" required minlength="6" autocomplete="current-password" />
+        </div>
+        <div class="auth-error"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">Sign In</button>
+      </form>
+
+      <!-- Register -->
+      <form class="auth-form hidden" id="register-form">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" placeholder="John Smith" required autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password2">Confirm Password</label>
+          <input type="password" id="reg-password2" placeholder="Repeat password" required minlength="6" autocomplete="new-password" />
+        </div>
+        <div class="auth-error"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="register-btn">Create Account</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <button class="btn btn-google btn-full google-signin-btn" type="button">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     APP PAGE
+     ===================================================== -->
+<div id="app-page">
+  <div class="app-layout">
+
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="16" rx="2"/><path d="M1 10h22"/><path d="M7 15h2"/></svg>
+        </div>
+        <span>SpendWise</span>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <span class="nav-section-label">Overview</span>
+        <div class="nav-item active" data-view="dashboard"><span class="nav-icon" id="sn-home"></span>Dashboard</div>
+
+        <span class="nav-section-label">Transactions</span>
+        <div class="nav-item" data-view="expenses"><span class="nav-icon" id="sn-expenses"></span>Expenses</div>
+        <div class="nav-item" data-view="income"><span class="nav-icon" id="sn-income"></span>Income</div>
+
+        <span class="nav-section-label">Planning</span>
+        <div class="nav-item" data-view="budgets"><span class="nav-icon" id="sn-budgets"></span>Budgets</div>
+
+        <span class="nav-section-label">Account</span>
+        <div class="nav-item" data-view="settings"><span class="nav-icon" id="sn-settings"></span>Settings</div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="user-name">Loading…</div>
+            <div class="user-email" id="user-email"></div>
+          </div>
+          <button class="logout-btn" id="logout-btn" title="Sign out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="top-bar-right">
+          <button class="currency-badge" id="currency-badge" title="Change currency">CAD</button>
+          <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+            <span id="theme-toggle-icon"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="page-content">
+
+        <!-- ============ DASHBOARD ============ -->
+        <section class="view active" id="view-dashboard">
+
+          <div class="dash-greeting">
+            <h3 id="dash-greeting-text">Good morning</h3>
+            <p id="dash-month">Loading…</p>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-card income">
+              <div class="summary-label"><span class="summary-icon" id="si-income"></span> Income</div>
+              <div class="summary-amount income" id="dash-income">$0.00</div>
+              <div class="summary-sub">This month</div>
+            </div>
+            <div class="summary-card expenses">
+              <div class="summary-label"><span class="summary-icon" id="si-expenses"></span> Expenses</div>
+              <div class="summary-amount expenses" id="dash-expenses">$0.00</div>
+              <div class="summary-sub">This month</div>
+            </div>
+            <div class="summary-card balance">
+              <div class="summary-label"><span class="summary-icon" id="si-balance"></span> Balance</div>
+              <div style="display:flex;align-items:baseline;gap:2px;">
+                <span id="dash-balance-sign" style="font-size:18px;font-weight:900;"></span>
+                <div class="summary-amount balance positive" id="dash-balance">$0.00</div>
+              </div>
+              <div class="summary-sub">Net this month</div>
+            </div>
+            <div class="summary-card savings">
+              <div class="summary-label"><span class="summary-icon" id="si-savings"></span> Savings Rate</div>
+              <div class="summary-amount savings" id="dash-savings">0%</div>
+              <div class="summary-sub">Of income saved</div>
+            </div>
+          </div>
+
+          <div class="charts-row">
+            <div class="chart-card">
+              <h3><span id="ci-pie"></span> By Category</h3>
+              <div class="chart-wrapper"><canvas id="pie-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h3><span id="ci-bar"></span> 6-Month Trend</h3>
+              <div class="chart-wrapper tall"><canvas id="bar-chart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <h3><span id="ci-clock"></span> Recent</h3>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-secondary" id="add-expense-btn"><span id="ab-exp"></span> Expense</button>
+              <button class="btn btn-sm btn-primary" id="add-income-btn"><span id="ab-inc"></span> Income</button>
+            </div>
+          </div>
+          <div class="transaction-list" id="recent-list"></div>
+
+        </section>
+
+        <!-- ============ EXPENSES ============ -->
+        <section class="view" id="view-expenses">
+          <div class="section-header" style="margin-bottom:14px;">
+            <div>
+              <h3>All Expenses</h3>
+              <div id="exp-total" style="font-size:12px;color:var(--t2);margin-top:2px;"></div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-secondary" id="export-exp-btn"><span id="ab-csv-exp"></span> CSV</button>
+              <button class="btn btn-sm btn-primary" id="add-expense-btn-2"><span id="ab-add-exp2"></span> Add</button>
+            </div>
+          </div>
+          <div class="filters-bar">
+            <input type="month" class="filter-select" id="exp-month-filter" />
+            <select class="filter-select" id="exp-cat-filter">
+              <option value="">All Categories</option>
+              <!-- Populated dynamically by app.js -->
+            </select>
+            <div class="search-wrap">
+              <span class="search-icon" id="si-search-exp"></span>
+              <input type="text" id="exp-search" placeholder="Search…" />
+            </div>
+          </div>
+          <div class="transaction-list" id="expense-list"></div>
+        </section>
+
+        <!-- ============ INCOME ============ -->
+        <section class="view" id="view-income">
+          <div class="section-header" style="margin-bottom:14px;">
+            <div>
+              <h3>All Income</h3>
+              <div id="inc-total" style="font-size:12px;color:var(--t2);margin-top:2px;"></div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-secondary" id="export-inc-btn"><span id="ab-csv-inc"></span> CSV</button>
+              <button class="btn btn-sm btn-primary" id="add-income-btn-2"><span id="ab-add-inc2"></span> Add</button>
+            </div>
+          </div>
+          <div class="filters-bar">
+            <input type="month" class="filter-select" id="inc-month-filter" />
+            <div class="search-wrap">
+              <span class="search-icon" id="si-search-inc"></span>
+              <input type="text" id="inc-search" placeholder="Search…" />
+            </div>
+          </div>
+          <div class="transaction-list" id="income-list"></div>
+        </section>
+
+        <!-- ============ BUDGETS ============ -->
+        <section class="view" id="view-budgets">
+          <div class="section-header" style="margin-bottom:6px;">
+            <h3>Monthly Budgets</h3>
+          </div>
+          <p style="font-size:13px;color:var(--t2);margin-bottom:18px;line-height:1.5;">
+            Set monthly limits per category. Progress updates in real-time with your expenses.
+          </p>
+
+          <!-- Add Category -->
+          <div class="add-category-bar">
+            <select class="add-cat-icon-select" id="new-cat-icon" title="Pick an icon">
+              <!-- Populated by app.js -->
+            </select>
+            <input type="text" id="new-cat-name" class="add-cat-input" placeholder="New category name…" maxlength="30" />
+            <button class="btn btn-sm btn-primary" onclick="App.addCategory()">Add</button>
+          </div>
+
+          <div class="budget-grid" id="budget-grid"></div>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section class="view" id="view-settings">
+          <div class="settings-list">
+
+            <div class="settings-card">
+              <h3><span class="settings-icon" id="si-profile"></span> Profile</h3>
+              <div class="settings-form">
+                <div class="form-group">
+                  <label for="settings-name">Display Name</label>
+                  <input type="text" id="settings-name" placeholder="Your name" />
+                </div>
+                <button class="btn btn-primary" id="save-settings-btn">Save Changes</button>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h3><span class="settings-icon" id="si-currency"></span> Currency</h3>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Choose your preferred display currency.</p>
+              <div class="currency-options">
+                <div class="currency-option selected" data-currency="CAD">
+                  <div class="cur-code">CAD</div>
+                  <div class="cur-name">Canadian $</div>
+                </div>
+                <div class="currency-option" data-currency="USD">
+                  <div class="cur-code">USD</div>
+                  <div class="cur-name">US Dollar</div>
+                </div>
+                <div class="currency-option" data-currency="INR">
+                  <div class="cur-code">INR</div>
+                  <div class="cur-name">Rupee</div>
+                </div>
+              </div>
+              <button class="btn btn-primary" style="margin-top:14px;"
+                onclick="document.getElementById('save-settings-btn').click()">Save Currency</button>
+            </div>
+
+            <div class="settings-card">
+              <h3><span class="settings-icon" id="si-appearance"></span> Appearance</h3>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Choose your preferred theme.</p>
+              <div class="theme-options">
+                <div class="theme-option" data-theme-val="dark" id="theme-opt-dark">
+                  <div class="theme-icon" id="ti-dark"></div>
+                  <div class="theme-label">Dark</div>
+                </div>
+                <div class="theme-option" data-theme-val="light" id="theme-opt-light">
+                  <div class="theme-icon" id="ti-light"></div>
+                  <div class="theme-label">Light</div>
+                </div>
+                <div class="theme-option" data-theme-val="auto" id="theme-opt-auto">
+                  <div class="theme-icon" id="ti-auto"></div>
+                  <div class="theme-label">System</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h3><span class="settings-icon" id="si-account"></span> Account</h3>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px;">Your data is completely private — only you can see your transactions.</p>
+              <button class="btn btn-danger btn-full" onclick="document.getElementById('logout-btn').click()">Sign Out</button>
+            </div>
+
+          </div>
+        </section>
+
+      </div><!-- /page-content -->
+    </main>
+  </div><!-- /app-layout -->
+
+  <!-- Bottom Navigation (mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-item active" data-view="dashboard">
+      <span class="bn-icon" id="bn-home"></span>
+      <span>Home</span>
+    </div>
+    <div class="bottom-nav-item" data-view="expenses">
+      <span class="bn-icon" id="bn-expenses"></span>
+      <span>Expenses</span>
+    </div>
+    <div class="bottom-nav-item" data-view="income">
+      <span class="bn-icon" id="bn-income"></span>
+      <span>Income</span>
+    </div>
+    <div class="bottom-nav-item" data-view="budgets">
+      <span class="bn-icon" id="bn-budgets"></span>
+      <span>Budgets</span>
+    </div>
+    <div class="bottom-nav-item" data-view="settings">
+      <span class="bn-icon" id="bn-settings"></span>
+      <span>Settings</span>
+    </div>
+  </nav>
+
+</div><!-- /app-page -->
+
+<!-- =====================================================
+     EXPENSE MODAL
+     ===================================================== -->
+<div class="modal-overlay" id="expense-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="expense-modal-title">Add Expense</h3>
+      <button class="modal-close" id="close-expense-modal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form class="modal-form" id="expense-form">
+      <div class="form-group">
+        <label for="expense-amount">Amount</label>
+        <input type="number" id="expense-amount" placeholder="0.00" min="0.01" step="0.01" required inputmode="decimal" />
+      </div>
+      <div class="form-group">
+        <label for="expense-category">Category</label>
+        <select id="expense-category" required>
+          <option value="" disabled selected>Select a category</option>
+          <!-- Populated dynamically by app.js -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="expense-date">Date</label>
+        <input type="date" id="expense-date" required />
+      </div>
+      <div class="form-group">
+        <label for="expense-note">Note (optional)</label>
+        <input type="text" id="expense-note" placeholder="e.g. Grocery run, Netflix…" maxlength="120" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-expense-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="save-expense-btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =====================================================
+     INCOME MODAL
+     ===================================================== -->
+<div class="modal-overlay" id="income-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="income-modal-title">Add Income</h3>
+      <button class="modal-close" id="close-income-modal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form class="modal-form" id="income-form">
+      <div class="form-group">
+        <label for="income-amount">Amount</label>
+        <input type="number" id="income-amount" placeholder="0.00" min="0.01" step="0.01" required inputmode="decimal" />
+      </div>
+      <div class="form-group">
+        <label for="income-source">Source</label>
+        <select id="income-source" required>
+          <option value="" disabled selected>Select a source</option>
+          <option>Salary</option><option>Freelance</option><option>Business</option>
+          <option>Investment</option><option>Gift</option><option>Rental</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="income-date">Date</label>
+        <input type="date" id="income-date" required />
+      </div>
+      <div class="form-group">
+        <label for="income-note">Note (optional)</label>
+        <input type="text" id="income-note" placeholder="e.g. March salary, client payment…" maxlength="120" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-income-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="save-income-btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/firebase-config.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
